@@ -1,5 +1,6 @@
 # timelapse-yi-cam
-Pull images from yi-camera rtsp stream and make it video.
+Pull images from yi-camera (or similar) rtsp stream into a bunch of image files, with date based dir structure.
+
 Based on code by [James Lloyd](https://james.lloyd.ws/)
 
 ## pre-requisites - working ffmpeg install
