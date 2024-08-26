@@ -22,7 +22,9 @@ def config_things():
     topdir = Config.WEBCAM_PICS_DIR
 
     print("WEBCAM_LOOP_TIME: {} seconds".format(Config.WEBCAM_LOOP_TIME))
-    looptime = Config.WEBCAM_LOOP_TIME
+    looptime = int(Config.WEBCAM_LOOP_TIME)
+
+    return vcap, topdir, looptime
 
 def get_image_from_rtsp(vcap, topdir):
   if vcap.isOpened():
@@ -43,5 +45,10 @@ def get_image_from_rtsp(vcap, topdir):
 
 
 if __name__ == "__main__":
+    # do config things
     vcap, topdir, looptime = config_things()
-    get_image_from_rtsp(vcap, topdir)
+
+    # do main loop things
+    while True:
+        get_image_from_rtsp(vcap, topdir)
+        time.sleep(looptime)
