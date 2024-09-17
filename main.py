@@ -5,6 +5,8 @@ import shutil
 import time
 from config import Config
 
+# static vars
+max_retries=5
 
 def config_things():
     if Config.WEBCAM_RTSP:
@@ -17,7 +19,7 @@ def config_things():
     if Config.WEBCAM_RTSP:
         print("WEBCAM_PICS_DIR: {}".format(Config.WEBCAM_PICS_DIR))
     else:
-        print("Webcam pics directoryu is not set. Pass in ENVVAR WEBCAM_PICS_DIR. Exiting.")
+        print("Webcam pics directory is not set. Pass in ENVVAR WEBCAM_PICS_DIR. Exiting.")
         exit(1)
     topdir = Config.WEBCAM_PICS_DIR
 
@@ -27,21 +29,26 @@ def config_things():
     return vcap, topdir, looptime
 
 def get_image_from_rtsp(vcap, topdir):
-  if vcap.isOpened():
-      ret, frame = vcap.read()
-      if ret:
-         cv2.imwrite('.tmp.png', frame)
-         filename = time.strftime("%Y%m%d-%H%M%S")
-         dirpath = time.strftime("%Y/%m/%d/")
-         if not os.path.isdir(f'{topdir}/{dirpath}'):
-             os.makedirs(f'{topdir}/{dirpath}')
+    for attempt in range(max_retries):
+        if vcap.isOpened():
+            ret, frame = vcap.read()
+            if ret:
+                cv2.imwrite('.tmp.png', frame)
+                filename = time.strftime("%Y%m%d-%H%M%S")
+                dirpath = time.strftime("%Y/%m/%d/")
+                if not os.path.isdir(f'{topdir}/{dirpath}'):
+                    os.makedirs(f'{topdir}/{dirpath}')
 
-         print("Generated image", f'{topdir}/{dirpath}{filename}.png')
-         shutil.move('.tmp.png', f'{topdir}/{dirpath}{filename}.png')
-      else:
-          print("Failed to Capture Frame")
-  else:
-      print("Failed to open camera")
+                print("Generated image", f'{topdir}/{dirpath}{filename}.png')
+                shutil.move('.tmp.png', f'{topdir}/{dirpath}{filename}.png')
+                break
+            else:
+                print(f"Failed to Capture Frame (attempt {attempt+1}/{max_retries})")
+        else:
+            print(f"Failed to open camera (attempt {attempt+1}/{max_retries})")
+            vcap.release()  # Release capture object
+            vcap = cv2.VideoCapture(vcap)  # Re-open the stream
+        print("Failed to capture image after all retries.")  
 
 
 if __name__ == "__main__":
