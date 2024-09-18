@@ -7,6 +7,7 @@ from config import Config
 
 # static vars
 max_retries=5
+consecutive_failures = 0
 
 def config_things():
     if Config.WEBCAM_RTSP:
@@ -29,6 +30,8 @@ def config_things():
     return vcap, topdir, looptime
 
 def get_image_from_rtsp(vcap, topdir):
+    global consecutive_failures
+
     for attempt in range(max_retries):
         if vcap.isOpened():
             ret, frame = vcap.read()
@@ -41,14 +44,23 @@ def get_image_from_rtsp(vcap, topdir):
 
                 print("Generated image", f'{topdir}/{dirpath}{filename}.png')
                 shutil.move('.tmp.png', f'{topdir}/{dirpath}{filename}.png')
+                consecutive_failures = 0
                 break
             else:
                 print(f"Failed to Capture Frame (attempt {attempt+1}/{max_retries})")
         else:
             print(f"Failed to open camera (attempt {attempt+1}/{max_retries})")
             vcap.release()  # Release capture object
-            vcap = cv2.VideoCapture(vcap)  # Re-open the stream
-        print("Failed to capture image after all retries.")  
+            vcap = cv2.VideoCapture(Config.WEBCAM_RTSP) 
+        
+    if consecutive_failures >= max_retries:
+        print("Too many consecutive failures. Attempting reconnection.")
+        vcap.release()
+        vcap = cv2.VideoCapture(Config.WEBCAM_RTSP)
+        consecutive_failures = 0
+
+    if not ret:
+        print("Failed to capture image after all retries.")     
 
 
 if __name__ == "__main__":
